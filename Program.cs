@@ -20,6 +20,7 @@ builder.Services.AddCors(options => {
 });
 builder.Services.AddSingleton<ApplicationSettings>();
 builder.Services.AddSingleton<ContactService>();
+builder.Services.AddSingleton<MessageService>();
 builder.Services.AddControllers().AddOData(options => options.Count().Expand().Filter().OrderBy().Select().SetMaxTop(1000));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

@@ -27,10 +27,12 @@ namespace API.Controllers {
 
         private readonly ContactService _contactService;
         private readonly ILogger<ContactsController> _logger;
+        private readonly MessageService _messageService;
 
-        public ContactsController(ILogger<ContactsController> logger,ContactService contactService) {
+        public ContactsController(ILogger<ContactsController> logger,MessageService messageService, ContactService contactService) {
             _contactService = contactService;
             _logger = logger;
+            _messageService = messageService;
         }
 
         #region CRUD Operations
@@ -79,7 +81,7 @@ namespace API.Controllers {
                 // Working = $select
                 // Not working = $expand
                 // Not needed = $count, $filter, $orderBy, $skip, $top
-               var message = JsonConvert.SerializeObject(new TraceMessage("GET","Contact",null,Request.QueryString.ToString()));
+               var message = JsonConvert.SerializeObject(new TraceMessage("GET","Contact",id,Request.QueryString.ToString()));
                 _logger.LogInformation(message);
                 //OData will handle returning 404 Not Found if IQueriable returns no result
                 return Ok(await _contactService.Get(id));
@@ -106,7 +108,10 @@ namespace API.Controllers {
             try {
                 var message = JsonConvert.SerializeObject(new TraceMessage("POST","Contact",null,contact));
                 _logger.LogInformation(message);
-                await _contactService.Create(contact);
+                var newContact = await _contactService.Create(contact);
+                // We have to re-create the message as the new contact now has an Id
+                message = JsonConvert.SerializeObject(new TraceMessage("POST","Contact",null,newContact));
+                _messageService.Send(message);
                 return Created("",contact);
             } catch(Exception ex) {
                 _logger.LogError(ex,null);
@@ -134,7 +139,7 @@ namespace API.Controllers {
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
         public async Task<IActionResult> Patch([FromRoute] string id,[FromBody] Delta<Contact> delta) {
             try {
-                var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",null,delta));
+                var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,delta));
                 _logger.LogInformation(message);
                 var contact = await _contactService.Get(id);
                 if(contact == null) {
@@ -142,6 +147,7 @@ namespace API.Controllers {
                 }
                 delta.Patch(contact);
                 await _contactService.Update(id,contact);
+                _messageService.Send(message);
                 return NoContent();
             } catch(Exception ex) {
                 _logger.LogError(ex,null);
@@ -163,13 +169,14 @@ namespace API.Controllers {
         [ProducesResponseType(typeof(void),404)] // Not Found
         public async Task<IActionResult> Delete([FromRoute] string id) {
             try {
-                var message = JsonConvert.SerializeObject(new TraceMessage("DELETE","Contact",null,id));
+                var message = JsonConvert.SerializeObject(new TraceMessage("DELETE","Contact",id,null));
                 _logger.LogInformation(message);
                 var contact = await _contactService.Get(id);
                 if(contact == null) {
                     return NotFound();
                 }
                 await _contactService.Remove(contact.Id);
+                _messageService.Send(message);
                 return NoContent();
             } catch(Exception ex) {
                 _logger.LogError(ex,null);
