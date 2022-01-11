@@ -137,7 +137,7 @@ namespace API.Controllers {
         //[ProducesResponseType(typeof(ForbiddenException),403)] // Forbidden - Product does not have required claim roles
         //[ProducesResponseType(typeof(void),404)] // Not Found
         ////[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
-        //public async Task<IActionResult> Put([FromRoute] string id,[FromBody] Delta<Contact> delta) {
+        //public async Task<IActionResult> Patch([FromRoute] string id,[FromBody] Delta<Contact> delta) {
         //    try {
         //        var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,contact));
         //        _logger.LogInformation(message);
