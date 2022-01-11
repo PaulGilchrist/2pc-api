@@ -128,7 +128,7 @@ namespace API.Controllers {
         /// <response code="401">Authentication required</response>
         /// <response code="403">Access denied due to inadaquate claim roles</response>
         /// <response code="404">The contact was not found</response>
-        [HttpPatch]
+        [HttpPut]
         [Route("contacts/{id}")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(Contact),200)] // Ok
@@ -137,15 +137,15 @@ namespace API.Controllers {
         [ProducesResponseType(typeof(ForbiddenException),403)] // Forbidden - Product does not have required claim roles
         [ProducesResponseType(typeof(void),404)] // Not Found
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
-        public async Task<IActionResult> Patch([FromRoute] string id,[FromBody] Delta<Contact> delta) {
+        public async Task<IActionResult> Put([FromRoute] string id,[FromBody] Contact contact) {
             try {
-                var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,delta));
+                var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,contact));
                 _logger.LogInformation(message);
-                var contact = await _contactService.Get(id);
-                if(contact == null) {
+                var foundContact = await _contactService.Get(id);
+                if(foundContact == null) {
                     return NotFound();
                 }
-                delta.Patch(contact);
+                contact.Id = id;
                 await _contactService.Update(id,contact);
                 _messageService.Send(message);
                 return NoContent();
