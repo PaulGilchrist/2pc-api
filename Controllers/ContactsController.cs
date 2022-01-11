@@ -119,15 +119,51 @@ namespace API.Controllers {
             }
         }
 
+        ///// <summary>Edit contact</summary>
+        ///// <param name="id">The contact id</param>
+        ///// <param name="contact">A updated contact object.</param>
+        ///// <returns>An updated contact</returns>
+        ///// <response code="200">The contact was successfully updated</response>
+        ///// <response code="400">The contact is invalid</response>
+        ///// <response code="401">Authentication required</response>
+        ///// <response code="403">Access denied due to inadaquate claim roles</response>
+        ///// <response code="404">The contact was not found</response>
+        //[HttpPatch]
+        //[Route("contacts/{id}")]
+        //[Produces("application/json")]
+        //[ProducesResponseType(typeof(Contact),200)] // Ok
+        //[ProducesResponseType(typeof(string),400)] // Bad Request (should be ModelStateDictionary)
+        //[ProducesResponseType(typeof(void),401)] // Unauthorized - Product not authenticated
+        //[ProducesResponseType(typeof(ForbiddenException),403)] // Forbidden - Product does not have required claim roles
+        //[ProducesResponseType(typeof(void),404)] // Not Found
+        ////[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
+        //public async Task<IActionResult> Put([FromRoute] string id,[FromBody] Delta<Contact> delta) {
+        //    try {
+        //        var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,contact));
+        //        _logger.LogInformation(message);
+        //        var contact = await _contactService.Get(id);
+        //        if(contact == null) {
+        //            return NotFound();
+        //        }
+        //        delta.Patch(contact); // Delta<T>.Patch() not working with .Net 6 as of OData 8.0.5
+        //        await _contactService.Update(id,contact);
+        //        _messageService.Send(message);
+        //        return NoContent();
+        //    } catch(Exception ex) {
+        //        _logger.LogError(ex,null);
+        //        return StatusCode(500,ex.Message);
+        //    }
+        //}
+
         /// <summary>Edit contact</summary>
-        /// <param name="id">The contact id</param>
-        /// <param name="contact">A updated contact object.</param>
-        /// <returns>An updated contact</returns>
-        /// <response code="200">The contact was successfully updated</response>
-        /// <response code="400">The contact is invalid</response>
-        /// <response code="401">Authentication required</response>
-        /// <response code="403">Access denied due to inadaquate claim roles</response>
-        /// <response code="404">The contact was not found</response>
+                 /// <param name="id">The contact id</param>
+                 /// <param name="contact">A updated contact object.</param>
+                 /// <returns>An updated contact</returns>
+                 /// <response code="200">The contact was successfully updated</response>
+                 /// <response code="400">The contact is invalid</response>
+                 /// <response code="401">Authentication required</response>
+                 /// <response code="403">Access denied due to inadaquate claim roles</response>
+                 /// <response code="404">The contact was not found</response>
         [HttpPut]
         [Route("contacts/{id}")]
         [Produces("application/json")]
@@ -139,7 +175,7 @@ namespace API.Controllers {
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
         public async Task<IActionResult> Put([FromRoute] string id,[FromBody] Contact contact) {
             try {
-                var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,contact));
+                var message = JsonConvert.SerializeObject(new TraceMessage("PUT","Contact",id,contact));
                 _logger.LogInformation(message);
                 var foundContact = await _contactService.Get(id);
                 if(foundContact == null) {
