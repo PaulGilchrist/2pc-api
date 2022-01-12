@@ -27,9 +27,9 @@ namespace API.Controllers {
 
         private readonly ContactService _contactService;
         private readonly ILogger<ContactsController> _logger;
-        private readonly MessageService _messageService;
+        private readonly IMessageService _messageService;
 
-        public ContactsController(ILogger<ContactsController> logger,MessageService messageService, ContactService contactService) {
+        public ContactsController(ILogger<ContactsController> logger,IMessageService messageService, ContactService contactService) {
             _contactService = contactService;
             _logger = logger;
             _messageService = messageService;

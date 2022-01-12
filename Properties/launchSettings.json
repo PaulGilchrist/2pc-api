@@ -20,7 +20,9 @@
             "ConnectionString": "mongodb://localhost:27017",
             "DatabaseName": "mongotest",
             "ContactsCollectionName": "contacts",
-            "QueueHostName": "localhost"
+            "QueueTyle": "RabbitMQ",
+            "QueueHostName": "localhost",
+            "QueueName": "api"
         }
     },
     "IIS Express": {
@@ -32,7 +34,9 @@
             "ConnectionString": "mongodb://localhost:27017",
             "DatabaseName": "mongotest",
             "ContactsCollectionName": "contacts",
-            "QueueHostName": "localhost"
+            "QueueTyle": "RabbitMQ",
+            "QueueHostName": "localhost",
+            "QueueName": "api"
         }
     }
   }

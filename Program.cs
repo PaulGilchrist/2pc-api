@@ -20,11 +20,22 @@ builder.Services.AddCors(options => {
 });
 builder.Services.AddSingleton<ApplicationSettings>();
 builder.Services.AddSingleton<ContactService>();
-builder.Services.AddSingleton<MessageService>();
+var applicationSettings = new ApplicationSettings();
+// Example showing support for multiple messaging platforms
+switch(applicationSettings.QueueType) {
+    case "AzureServiceBus":
+        builder.Services.AddSingleton<IMessageService,MessageServiceAzureServiceBus>();
+        break;
+    case "Dapr":
+        builder.Services.AddSingleton<IMessageService,MessageServiceDapr>();
+        break;
+    default:
+        builder.Services.AddSingleton<IMessageService,MessageServiceRabbitMQ>();
+        break;
+}
 builder.Services.AddControllers().AddOData(options => options.Count().Expand().Filter().OrderBy().Select().SetMaxTop(1000));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen(options => {
     var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
     if(basePath != null) {
