@@ -8,3 +8,4 @@ Main additions to the Visual Studio template include:
 * Docker support
 * CORS support
 * OData support
+* OpenTelemetry support

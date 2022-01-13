@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using API.Models;
 using API.Services;
@@ -26,12 +27,10 @@ namespace API.Controllers {
     public class ContactsController: Controller {
 
         private readonly ContactService _contactService;
-        private readonly ILogger<ContactsController> _logger;
         private readonly IMessageService _messageService;
 
-        public ContactsController(ILogger<ContactsController> logger,IMessageService messageService, ContactService contactService) {
+        public ContactsController(IMessageService messageService, ContactService contactService) {
             _contactService = contactService;
-            _logger = logger;
             _messageService = messageService;
         }
 
@@ -56,12 +55,10 @@ namespace API.Controllers {
                    https://jira.mongodb.org/browse/CSHARP-1771
                    in meantime, remove them from query, then apply, then apply second LINQ re-applying select
                */
-                var message = JsonConvert.SerializeObject(new TraceMessage("GET","Contact",null,Request.QueryString.ToString()));
-                _logger.LogInformation(message);
-                return Ok(_contactService.Get());
+               return Ok(_contactService.Get());
             } catch(Exception ex) {
-                _logger.LogError(ex,null);
-                return StatusCode(500,ex.Message);
+                Activity.Current?.AddTag("Exception",ex);
+               return StatusCode(500,ex.Message);
             }
         }
 
@@ -81,12 +78,10 @@ namespace API.Controllers {
                 // Working = $select
                 // Not working = $expand
                 // Not needed = $count, $filter, $orderBy, $skip, $top
-               var message = JsonConvert.SerializeObject(new TraceMessage("GET","Contact",id,Request.QueryString.ToString()));
-                _logger.LogInformation(message);
                 //OData will handle returning 404 Not Found if IQueriable returns no result
                 return Ok(await _contactService.Get(id));
             } catch(Exception ex) {
-                _logger.LogError(ex,null);
+                Activity.Current?.AddTag("Exception",ex);
                 return StatusCode(500,ex.Message);
             }
         }
@@ -106,15 +101,13 @@ namespace API.Controllers {
         [ProducesResponseType(typeof(void),401)] // Unauthorized
         public async Task<IActionResult> Post([FromBody] Contact contact) {
             try {
-                var message = JsonConvert.SerializeObject(new TraceMessage("POST","Contact",null,contact));
-                _logger.LogInformation(message);
                 var newContact = await _contactService.Create(contact);
                 // We have to re-create the message as the new contact now has an Id
-                message = JsonConvert.SerializeObject(new TraceMessage("POST","Contact",null,newContact));
+                var message = JsonConvert.SerializeObject(new TraceMessage("POST","Contact",null,newContact));
                 _messageService.Send(message);
                 return Created("",contact);
             } catch(Exception ex) {
-                _logger.LogError(ex,null);
+                Activity.Current?.AddTag("Exception",ex);
                 return StatusCode(500,ex.Message);
             }
         }
@@ -139,14 +132,13 @@ namespace API.Controllers {
         ////[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
         //public async Task<IActionResult> Patch([FromRoute] string id,[FromBody] Delta<Contact> delta) {
         //    try {
-        //        var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,contact));
-        //        _logger.LogInformation(message);
         //        var contact = await _contactService.Get(id);
         //        if(contact == null) {
         //            return NotFound();
         //        }
         //        delta.Patch(contact); // Delta<T>.Patch() not working with .Net 6 as of OData 8.0.5
         //        await _contactService.Update(id,contact);
+        //        var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,contact));
         //        _messageService.Send(message);
         //        return NoContent();
         //    } catch(Exception ex) {
@@ -156,14 +148,14 @@ namespace API.Controllers {
         //}
 
         /// <summary>Edit contact</summary>
-                 /// <param name="id">The contact id</param>
-                 /// <param name="contact">A updated contact object.</param>
-                 /// <returns>An updated contact</returns>
-                 /// <response code="200">The contact was successfully updated</response>
-                 /// <response code="400">The contact is invalid</response>
-                 /// <response code="401">Authentication required</response>
-                 /// <response code="403">Access denied due to inadaquate claim roles</response>
-                 /// <response code="404">The contact was not found</response>
+        /// <param name="id">The contact id</param>
+        /// <param name="contact">A updated contact object.</param>
+        /// <returns>An updated contact</returns>
+        /// <response code="200">The contact was successfully updated</response>
+        /// <response code="400">The contact is invalid</response>
+        /// <response code="401">Authentication required</response>
+        /// <response code="403">Access denied due to inadaquate claim roles</response>
+        /// <response code="404">The contact was not found</response>
         [HttpPut]
         [Route("contacts/{id}")]
         [Produces("application/json")]
@@ -175,18 +167,17 @@ namespace API.Controllers {
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
         public async Task<IActionResult> Put([FromRoute] string id,[FromBody] Contact contact) {
             try {
-                var message = JsonConvert.SerializeObject(new TraceMessage("PUT","Contact",id,contact));
-                _logger.LogInformation(message);
-                var foundContact = await _contactService.Get(id);
+                 var foundContact = await _contactService.Get(id);
                 if(foundContact == null) {
                     return NotFound();
                 }
                 contact.Id = id;
                 await _contactService.Update(id,contact);
+                var message = JsonConvert.SerializeObject(new TraceMessage("PUT","Contact",id,contact));
                 _messageService.Send(message);
                 return NoContent();
             } catch(Exception ex) {
-                _logger.LogError(ex,null);
+                Activity.Current?.AddTag("Exception",ex);
                 return StatusCode(500,ex.Message);
             }
         }
@@ -205,17 +196,16 @@ namespace API.Controllers {
         [ProducesResponseType(typeof(void),404)] // Not Found
         public async Task<IActionResult> Delete([FromRoute] string id) {
             try {
-                var message = JsonConvert.SerializeObject(new TraceMessage("DELETE","Contact",id,null));
-                _logger.LogInformation(message);
                 var contact = await _contactService.Get(id);
                 if(contact == null) {
                     return NotFound();
                 }
                 await _contactService.Remove(contact.Id);
+                var message = JsonConvert.SerializeObject(new TraceMessage("DELETE","Contact",id,null));
                 _messageService.Send(message);
                 return NoContent();
             } catch(Exception ex) {
-                _logger.LogError(ex,null);
+                Activity.Current?.AddTag("Exception",ex);
                 return StatusCode(500,ex.Message);
             }
         }

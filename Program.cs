@@ -3,10 +3,28 @@ using API.Classes;
 using API.Models;
 using API.Services;
 using Microsoft.AspNetCore.OData;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
-var builder = WebApplication.CreateBuilder(args);
 
+var builder = WebApplication.CreateBuilder(args);
+// Define some important OpenTelemetry constants and the activity source
+var serviceName = "mongodb-api";
+var serviceVersion = "1.0.0";
+// Configure important OpenTelemetry settings and the console exporter
+builder.Services.AddOpenTelemetryTracing(b => {
+    b
+    .AddConsoleExporter()
+    .AddSource(serviceName)
+    .SetResourceBuilder(
+        ResourceBuilder.CreateDefault()
+            .AddService(serviceName: serviceName,serviceVersion: serviceVersion))
+    // .AddZipkinExporter() // Default telemetry destination for Dapr
+    // .AddSqlClientInstrumentation()
+    .AddHttpClientInstrumentation()
+    .AddAspNetCoreInstrumentation();
+});
 // Add services to the container.
 // CORS support
 builder.Services.AddCors(options => {
