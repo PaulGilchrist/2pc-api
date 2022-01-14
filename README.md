@@ -4,8 +4,8 @@
 
 Main additions to the Visual Studio template include:
 * Swagger integration with code comments
-* JSON based console logging
 * Docker support
 * CORS support
 * OData support
-* OpenTelemetry support
+* OpenTelemetry support with exporters for AppInsights, Console, or Zipkin
+* Messaging support for AzureServiceBus, Dapr, or RabbitMQ
