@@ -11,6 +11,7 @@ namespace API.Models {
         public string TelemetryConnectionString { get; set; }
         public string TelemetryType { get; set; }
         public ApplicationSettings() {
+#pragma warning disable CS8601
             DatabaseConnectionString = Environment.GetEnvironmentVariable("DatabaseConnectionString");
             DatabaseName = Environment.GetEnvironmentVariable("DatabaseName");
             ContactsCollectionName = Environment.GetEnvironmentVariable("ContactsCollectionName");
@@ -19,6 +20,7 @@ namespace API.Models {
             QueueType = Environment.GetEnvironmentVariable("QueueType"); // Valid options are "AzureServiceBus", "Dapr", "None", or "RabbitMQ" (Default: "None")
             TelemetryConnectionString = Environment.GetEnvironmentVariable("TelemetryConnectionString"); // Blank if TelemetryType="Console"
             TelemetryType = Environment.GetEnvironmentVariable("TelemetryType"); // Valid options are "AppInsights", "Console", or "Zipkin" (Default: "Console")
+#pragma warning restore CS8601
         }
     }
 }
