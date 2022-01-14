@@ -1,13 +1,24 @@
 ﻿using System.Diagnostics;
+using System.Transactions;
 using API.Models;
 using Azure.Messaging.ServiceBus;
+
+/*
+ * Azure Service Bus Transactions
+ * https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-transactions
+ * https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/servicebus/Azure.Messaging.ServiceBus/samples/Sample06_Transactions.md#transactions-across-entities
+ */
 
 namespace API.Services {
     // Example for using multiple different backend message services through a common interface
     public class MessageServiceAzureServiceBus: IMessageService, IDisposable {
         private readonly ApplicationSettings _applicationSettings;
-        ServiceBusSender _sender;
-        ServiceBusReceiver _receiver;
+        private ServiceBusSender _sender;
+        private ServiceBusReceivedMessage? _transferMessage;
+        private ServiceBusReceiver _transferReceiver;
+        private ServiceBusReceiver _receiver;
+        private TransactionScope? _transactionScope = null;
+
         private bool disposedValue;
 
         public MessageServiceAzureServiceBus(ApplicationSettings applicationSettings) {
@@ -16,22 +27,26 @@ namespace API.Services {
             string connectionString = _applicationSettings.QueueConnectionString;
             string queueName = _applicationSettings.QueueName;
             // since ServiceBusClient implements IAsyncDisposable we create it with "await using"
-            var client = new ServiceBusClient(connectionString);
+            var options = new ServiceBusClientOptions { EnableCrossEntityTransactions = true };
+            var client = new ServiceBusClient(connectionString,options);
             // Create the sender and receiver
             _sender = client.CreateSender(queueName);
+            _transferReceiver = client.CreateReceiver($"transfer-{queueName}");
             _receiver = client.CreateReceiver(queueName);
         }
 
         public void BeginTransaction() {
-            Activity.Current?.AddEvent(new ActivityEvent("AzureServiceBus.Message.BeginTransaction Not Implemented"));
+            _transferMessage = _transferReceiver.ReceiveMessageAsync().GetAwaiter().GetResult();
+            _transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
         }
 
         public void CommitTransaction() {
-            Activity.Current?.AddEvent(new ActivityEvent("AzureServiceBus.Message.CommitTransaction Not Implemented"));
+            _transactionScope?.Complete();
         }
 
         public void RollbackTransaction() {
-            Activity.Current?.AddEvent(new ActivityEvent("AzureServiceBus.Message.RollbackTransaction Not Implemented"));
+            _transactionScope?.Dispose();
+            Activity.Current?.AddEvent(new ActivityEvent("AzureServiceBus.Message.Rollback"));
         }
 
         public string? Receive() {
@@ -49,10 +64,10 @@ namespace API.Services {
         }
 
         public void Send(string message) {
-            // create a message that we can send. UTF-8 encoding is used when providing a string.
-            ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message);
+            // setup transfer receiver so we know the message was delivered before calling CommitTransaction();
+            _transferReceiver.CompleteMessageAsync(_transferMessage).GetAwaiter();
             // send the message
-            _sender.SendMessageAsync(serviceBusMessage).GetAwaiter().GetResult();
+            _sender.SendMessageAsync(new ServiceBusMessage(message)).GetAwaiter();
             var activityTagsCollection = new ActivityTagsCollection();
             activityTagsCollection.Add("message",message);
             Activity.Current?.AddEvent(new ActivityEvent("AzureServiceBus.Message.Sent",default,activityTagsCollection));
@@ -68,7 +83,11 @@ namespace API.Services {
             if(!disposedValue) {
                 if(disposing) {
                     // TODO: dispose managed state (managed objects)
+                    _transactionScope?.Dispose();
                     _sender.CloseAsync().GetAwaiter();
+                    _sender.DisposeAsync().GetAwaiter();
+                    _receiver.CloseAsync().GetAwaiter();
+                    _receiver.DisposeAsync().GetAwaiter();
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer
