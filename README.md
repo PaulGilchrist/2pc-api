@@ -9,3 +9,4 @@ Main additions to the Visual Studio template include:
 * OData support
 * OpenTelemetry support with exporters for AppInsights, Console, or Zipkin
 * Messaging support for AzureServiceBus, Dapr, or RabbitMQ
+  * Transactional support ensuring both event messaging and DB changes both succeed or both fail

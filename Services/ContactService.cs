@@ -14,7 +14,7 @@ namespace API.Services {
         }
 
         public IMongoQueryable<Contact> Get() {
-            return _contacts.AsQueryable<Contact>();
+            return _contacts.AsQueryable();
         }
 
         public async Task<Contact> Get(string id) {

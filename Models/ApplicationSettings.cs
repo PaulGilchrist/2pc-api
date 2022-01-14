@@ -16,9 +16,9 @@ namespace API.Models {
             ContactsCollectionName = Environment.GetEnvironmentVariable("ContactsCollectionName");
             QueueConnectionString = Environment.GetEnvironmentVariable("QueueConnectionString"); // Same as HostName for QueueType="RabbitMQ"
             QueueName = Environment.GetEnvironmentVariable("QueueName");
-            QueueType = Environment.GetEnvironmentVariable("QueueType"); // Valid options are "AzureServiceBus", "Dapr", or "RabbitMQ"
+            QueueType = Environment.GetEnvironmentVariable("QueueType"); // Valid options are "AzureServiceBus", "Dapr", "None", or "RabbitMQ" (Default: "None")
             TelemetryConnectionString = Environment.GetEnvironmentVariable("TelemetryConnectionString"); // Blank if TelemetryType="Console"
-            TelemetryType = Environment.GetEnvironmentVariable("TelemetryType"); // Valid options are "AppInsights", "Console", or "Zipkin"
+            TelemetryType = Environment.GetEnvironmentVariable("TelemetryType"); // Valid options are "AppInsights", "Console", or "Zipkin" (Default: "Console")
         }
     }
 }

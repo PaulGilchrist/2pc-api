@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Transactions;
 using API.Models;
 using API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -21,7 +22,7 @@ using Newtonsoft.Json;
 
 namespace API.Controllers {
     /// <summary>
-    /// Represents a RESTful service of products
+    /// Represents a RESTful service for contacts
     /// IMPORTANT - [Produces("application/json")] is required on every HTTP action or Swagger will not show what object model will be returned
     /// </summary>
     public class ContactsController: Controller {
@@ -101,13 +102,91 @@ namespace API.Controllers {
         [ProducesResponseType(typeof(void),401)] // Unauthorized
         public async Task<IActionResult> Post([FromBody] Contact contact) {
             try {
-                var newContact = await _contactService.Create(contact);
-                // We have to re-create the message as the new contact now has an Id
-                var message = JsonConvert.SerializeObject(new TraceMessage("POST","Contact",null,newContact));
+                var message = JsonConvert.SerializeObject(new TraceMessage("POST","Contact",null,contact));
+                // Wrap the message send (first) and the DB change (second) in a message transaction
+                _messageService.BeginTransaction();
                 _messageService.Send(message);
+                var newContact = await _contactService.Create(contact);
+                _messageService.CommitTransaction();
                 return Created("",contact);
             } catch(Exception ex) {
+                // Rollback the event message send since an error has occured with updating the database
+                _messageService.RollbackTransaction();
                 Activity.Current?.AddTag("exception",ex);
+                return StatusCode(500,ex.Message);
+            }
+        }
+
+        /// <summary>Edit contact</summary>
+        /// <param name="id">The contact id</param>
+        /// <param name="contact">A updated contact object.</param>
+        /// <returns>An updated contact</returns>
+        /// <response code="200">The contact was successfully updated</response>
+        /// <response code="400">The contact is invalid</response>
+        /// <response code="401">Authentication required</response>
+        /// <response code="403">Access denied due to inadaquate claim roles</response>
+        /// <response code="404">The contact was not found</response>
+        [HttpPut]
+        [Route("contacts/{id}")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(Contact),200)] // Ok
+        [ProducesResponseType(typeof(string),400)] // Bad Request (should be ModelStateDictionary)
+        [ProducesResponseType(typeof(void),401)] // Unauthorized - Product not authenticated
+        [ProducesResponseType(typeof(ForbiddenException),403)] // Forbidden - Product does not have required claim roles
+        [ProducesResponseType(typeof(void),404)] // Not Found
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
+        public async Task<IActionResult> Put([FromRoute] string id,[FromBody] Contact contact) {
+            try {
+                var foundContact = await _contactService.Get(id);
+                if(foundContact == null) {
+                    return NotFound();
+                }
+                contact.Id = id;
+                var message = JsonConvert.SerializeObject(new TraceMessage("PUT","Contact",id,contact));
+                // Wrap the message send (first) and the DB change (second) in a message transaction
+                _messageService.BeginTransaction();
+                _messageService.Send(message);
+                await _contactService.Update(id,contact);
+                _messageService.CommitTransaction();
+                Activity.Current?.AddTag("value",contact);
+                return NoContent();
+            } catch(Exception ex) {
+                // Rollback the event message send since an error has occured with updating the database
+                _messageService.RollbackTransaction();
+                Activity.Current?.AddTag("exception",ex);
+                return StatusCode(500,ex.Message);
+            }
+       }
+
+        /// <summary>Delete the given contact</summary>
+        /// <param name="id">The contact id</param>
+        /// <response code="204">The contact was successfully deleted</response>
+        /// <response code="401">Authentication required</response>
+        /// <response code="403">Access denied due to inadaquate claim roles</response>
+        /// <response code="404">The product was not found</response>
+        [HttpDelete]
+        [Route("contacts/{id}")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(void),204)] // No Content
+        [ProducesResponseType(typeof(void),401)] // Unauthorized
+        [ProducesResponseType(typeof(void),404)] // Not Found
+        public async Task<IActionResult> Delete([FromRoute] string id) {
+            try {
+                var contact = await _contactService.Get(id);
+                if(contact == null) {
+                    return NotFound();
+                }
+                var message = JsonConvert.SerializeObject(new TraceMessage("DELETE","Contact",id,null));
+                // Wrap the message send (first) and the DB change (second) in a message transaction
+                _messageService.BeginTransaction();
+                _messageService.Send(message);
+                await _contactService.Remove(contact.Id);
+                _messageService.CommitTransaction();
+                return NoContent();
+            } catch(Exception ex) {
+                // Rollback the event message send since an error has occured with updating the database
+                _messageService.RollbackTransaction();
+                Activity.Current?.AddTag("Exception",ex);
                 return StatusCode(500,ex.Message);
             }
         }
@@ -137,79 +216,20 @@ namespace API.Controllers {
         //            return NotFound();
         //        }
         //        delta.Patch(contact); // Delta<T>.Patch() not working with .Net 6 as of OData 8.0.5
-        //        await _contactService.Update(id,contact);
+        //        // Wrap the message send (first) and the DB change (second) in a message transaction
+        //        _messageService.BeginTransaction();
         //        var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,contact));
         //        _messageService.Send(message);
+        //        await _contactService.Update(id,contact);
+        //        _messageService.CommitTransaction();
         //        return NoContent();
         //    } catch(Exception ex) {
-        //        _logger.LogError(ex,null);
+        //        // Rollback the event message send since an error has occured with updating the database
+        //        _messageService.RollbackTransaction();
+        //        Activity.Current?.AddTag("exception",ex);
         //        return StatusCode(500,ex.Message);
         //    }
         //}
-
-        /// <summary>Edit contact</summary>
-        /// <param name="id">The contact id</param>
-        /// <param name="contact">A updated contact object.</param>
-        /// <returns>An updated contact</returns>
-        /// <response code="200">The contact was successfully updated</response>
-        /// <response code="400">The contact is invalid</response>
-        /// <response code="401">Authentication required</response>
-        /// <response code="403">Access denied due to inadaquate claim roles</response>
-        /// <response code="404">The contact was not found</response>
-        [HttpPut]
-        [Route("contacts/{id}")]
-        [Produces("application/json")]
-        [ProducesResponseType(typeof(Contact),200)] // Ok
-        [ProducesResponseType(typeof(string),400)] // Bad Request (should be ModelStateDictionary)
-        [ProducesResponseType(typeof(void),401)] // Unauthorized - Product not authenticated
-        [ProducesResponseType(typeof(ForbiddenException),403)] // Forbidden - Product does not have required claim roles
-        [ProducesResponseType(typeof(void),404)] // Not Found
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
-        public async Task<IActionResult> Put([FromRoute] string id,[FromBody] Contact contact) {
-            try {
-                 var foundContact = await _contactService.Get(id);
-                if(foundContact == null) {
-                    return NotFound();
-                }
-                contact.Id = id;
-                await _contactService.Update(id,contact);
-                var message = JsonConvert.SerializeObject(new TraceMessage("PUT","Contact",id,contact));
-                _messageService.Send(message);
-                Activity.Current?.AddTag("value",contact);
-                return NoContent();
-            } catch(Exception ex) {
-                Activity.Current?.AddTag("exception",contact);
-                return StatusCode(500,ex.Message);
-            }
-        }
-
-        /// <summary>Delete the given contact</summary>
-        /// <param name="id">The contact id</param>
-        /// <response code="204">The contact was successfully deleted</response>
-        /// <response code="401">Authentication required</response>
-        /// <response code="403">Access denied due to inadaquate claim roles</response>
-        /// <response code="404">The product was not found</response>
-        [HttpDelete]
-        [Route("contacts/{id}")]
-        [Produces("application/json")]
-        [ProducesResponseType(typeof(void),204)] // No Content
-        [ProducesResponseType(typeof(void),401)] // Unauthorized
-        [ProducesResponseType(typeof(void),404)] // Not Found
-        public async Task<IActionResult> Delete([FromRoute] string id) {
-            try {
-                var contact = await _contactService.Get(id);
-                if(contact == null) {
-                    return NotFound();
-                }
-                await _contactService.Remove(contact.Id);
-                var message = JsonConvert.SerializeObject(new TraceMessage("DELETE","Contact",id,null));
-                _messageService.Send(message);
-                return NoContent();
-            } catch(Exception ex) {
-                Activity.Current?.AddTag("Exception",ex);
-                return StatusCode(500,ex.Message);
-            }
-        }
 
         #endregion
     }

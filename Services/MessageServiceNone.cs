@@ -3,13 +3,10 @@ using System.Text;
 using API.Models;
 
 namespace API.Services {
-    public class MessageServiceDapr: IMessageService {
-        private readonly ApplicationSettings _applicationSettings;
+    public class MessageServiceNone: IMessageService {
         private bool disposedValue;
 
-        public MessageServiceDapr(ApplicationSettings applicationSettings) {
-            _applicationSettings = applicationSettings;
-        }
+        public MessageServiceNone(ApplicationSettings applicationSettings) { }
 
         public void BeginTransaction() {
             Activity.Current?.AddEvent(new ActivityEvent("AzureServiceBus.Message.BeginTransaction Not Implemented"));
@@ -24,13 +21,7 @@ namespace API.Services {
         }
 
         public void Send(string message) {
-            var url = "http://localhost:3500/v1.0/publish/pubsub/" + _applicationSettings.QueueName;
-            using var client = new HttpClient();
-            var data = new StringContent(message,Encoding.UTF8,"application/json");
-            var result = client.PostAsync(url,data).GetAwaiter().GetResult();
-            var activityTagsCollection = new ActivityTagsCollection();
-            activityTagsCollection.Add("message",message);
-            Activity.Current?.AddEvent(new ActivityEvent("Dapr.Message.Sent",default,activityTagsCollection));
+            // Will not send event message to any queue
         }
 
         public void Dispose() {
@@ -52,7 +43,7 @@ namespace API.Services {
         }
 
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~MessageServiceDapr()
+        // ~MessageServiceNone()
         // {
         //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         //     Dispose(disposing: false);
