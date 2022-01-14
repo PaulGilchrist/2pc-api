@@ -22,8 +22,6 @@ builder.Services.AddOpenTelemetryTracing(b => {
         ResourceBuilder.CreateDefault()
             .AddService(serviceName: serviceName,serviceVersion: serviceVersion))
     .AddConsoleExporter() // Will always be added regardless of which TelemetryType is chosen
-
-    .AddZipkinExporter() // Default telemetry destination for Dapr
     // .AddSqlClientInstrumentation()
     .AddHttpClientInstrumentation()
     .AddAspNetCoreInstrumentation();
@@ -38,8 +36,25 @@ builder.Services.AddOpenTelemetryTracing(b => {
                 o.Endpoint = new Uri(applicationSettings.TelemetryConnectionString); //ex: http://localhost:9411/api/v2/spans
             });
             break;
+        default: // Logging to the console (exporter already added)
+            break;
     }
 });
+// Example showing support for multiple messaging platforms
+switch(applicationSettings.QueueType) {
+    case "AzureServiceBus":
+        builder.Services.AddSingleton<IMessageService,MessageServiceAzureServiceBus>();
+        break;
+    case "Dapr":
+        builder.Services.AddSingleton<IMessageService,MessageServiceDapr>();
+        break;
+    case "RabbitMQ":
+        builder.Services.AddSingleton<IMessageService,MessageServiceRabbitMQ>();
+        break;
+    default: // None
+        builder.Services.AddSingleton<IMessageService,MessageServiceNone>();
+        break;
+}
 // Add services to the container.
 // CORS support
 builder.Services.AddCors(options => {
@@ -53,18 +68,6 @@ builder.Services.AddCors(options => {
 });
 builder.Services.AddSingleton<ApplicationSettings>();
 builder.Services.AddSingleton<ContactService>();
-// Example showing support for multiple messaging platforms
-switch(applicationSettings.QueueType) {
-    case "AzureServiceBus":
-        builder.Services.AddSingleton<IMessageService,MessageServiceAzureServiceBus>();
-        break;
-    case "Dapr":
-        builder.Services.AddSingleton<IMessageService,MessageServiceDapr>();
-        break;
-    default:
-        builder.Services.AddSingleton<IMessageService,MessageServiceRabbitMQ>();
-        break;
-}
 builder.Services.AddControllers().AddOData(options => options.Count().Expand().Filter().OrderBy().Select().SetMaxTop(1000));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -93,9 +96,3 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
-
-/*
- * 
- * lsof -i:7163
- * kill -p <PID>
- */
