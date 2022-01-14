@@ -1,4 +1,5 @@
-﻿using API.Models;
+﻿using System.Diagnostics;
+using API.Models;
 using Azure.Messaging.ServiceBus;
 
 namespace API.Services {
@@ -25,14 +26,20 @@ namespace API.Services {
             ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message);
             // send the message
             _sender.SendMessageAsync(serviceBusMessage).GetAwaiter().GetResult();
-            Console.WriteLine(" [x] Sent {0}",message);
+            var activityTagsCollection = new ActivityTagsCollection();
+            activityTagsCollection.Add("message",message);
+            Activity.Current?.AddEvent(new ActivityEvent("AzureServiceBus.Message.Sent",default,activityTagsCollection));
         }
 
         public string Receive() {
             // the received message is a different type as it contains some service set properties
             ServiceBusReceivedMessage receivedMessage = _receiver.ReceiveMessageAsync().GetAwaiter().GetResult();
             // get the message body as a string
-            return receivedMessage.Body.ToString();
+            var message = receivedMessage.Body.ToString();
+            var activityTagsCollection = new ActivityTagsCollection();
+            activityTagsCollection.Add("message",message);
+            Activity.Current?.AddEvent(new ActivityEvent("AzureServiceBus.Message.Received",default,activityTagsCollection));
+            return message;
         }
     }
 }

@@ -11,7 +11,7 @@ using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
 // Define some important OpenTelemetry constants and the activity source
-var serviceName = "mongodb-api";
+var serviceName = "Api.Contacts";
 var serviceVersion = "1.0.0";
 var applicationSettings = new ApplicationSettings();
 // Configure important OpenTelemetry settings and the console exporter

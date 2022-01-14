@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using API.Models;
 
 namespace API.Services {
@@ -14,7 +15,9 @@ namespace API.Services {
             using var client = new HttpClient();
             var data = new StringContent(message,Encoding.UTF8,"application/json");
             var result = client.PostAsync(url,data).GetAwaiter().GetResult();
-            Console.WriteLine(" [x] Sent {0}",message);
+            var activityTagsCollection = new ActivityTagsCollection();
+            activityTagsCollection.Add("message",message);
+            Activity.Current?.AddEvent(new ActivityEvent("Dapr.Message.Sent",default,activityTagsCollection));
         }
 
 

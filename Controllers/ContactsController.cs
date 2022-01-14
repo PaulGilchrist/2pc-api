@@ -48,17 +48,17 @@ namespace API.Controllers {
         public IActionResult Get() {
             try {
                 /*
-               Working = $count, $filter, $orderBy, $skip, $top
-               Not working = $select, $expand ($select does work for GetById)
-               Mongo Team working on fix for $select and $expand
+                Working = $count, $filter, $orderBy, $skip, $top
+                Not working = $select, $expand ($select does work for GetById)
+                Mongo Team working on fix for $select and $expand
                    https://jira.mongodb.org/browse/CSHARP-1423
                    https://jira.mongodb.org/browse/CSHARP-1771
                    in meantime, remove them from query, then apply, then apply second LINQ re-applying select
-               */
-               return Ok(_contactService.Get());
+                */
+                return Ok(_contactService.Get());
             } catch(Exception ex) {
-                Activity.Current?.AddTag("Exception",ex);
-               return StatusCode(500,ex.Message);
+                Activity.Current?.AddTag("exception",ex);
+                return StatusCode(500,ex.Message);
             }
         }
 
@@ -81,7 +81,7 @@ namespace API.Controllers {
                 //OData will handle returning 404 Not Found if IQueriable returns no result
                 return Ok(await _contactService.Get(id));
             } catch(Exception ex) {
-                Activity.Current?.AddTag("Exception",ex);
+                Activity.Current?.AddTag("exception",ex);
                 return StatusCode(500,ex.Message);
             }
         }
@@ -107,7 +107,7 @@ namespace API.Controllers {
                 _messageService.Send(message);
                 return Created("",contact);
             } catch(Exception ex) {
-                Activity.Current?.AddTag("Exception",ex);
+                Activity.Current?.AddTag("exception",ex);
                 return StatusCode(500,ex.Message);
             }
         }
@@ -175,9 +175,10 @@ namespace API.Controllers {
                 await _contactService.Update(id,contact);
                 var message = JsonConvert.SerializeObject(new TraceMessage("PUT","Contact",id,contact));
                 _messageService.Send(message);
+                Activity.Current?.AddTag("value",contact);
                 return NoContent();
             } catch(Exception ex) {
-                Activity.Current?.AddTag("Exception",ex);
+                Activity.Current?.AddTag("exception",contact);
                 return StatusCode(500,ex.Message);
             }
         }
