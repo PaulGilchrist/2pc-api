@@ -11,7 +11,7 @@ namespace API.Services {
         public MessageServiceAzureServiceBus(ApplicationSettings applicationSettings) {
             _applicationSettings = applicationSettings;
             // Create a ServiceBusClient that will authenticate using a connection string
-            string connectionString = _applicationSettings.ConnectionString;
+            string connectionString = _applicationSettings.QueueConnectionString;
             string queueName = _applicationSettings.QueueName;
             // since ServiceBusClient implements IAsyncDisposable we create it with "await using"
             var client = new ServiceBusClient(connectionString);

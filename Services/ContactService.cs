@@ -8,7 +8,7 @@ namespace API.Services {
         private readonly IMongoCollection<Contact> _contacts;
 
         public ContactService(ApplicationSettings applicationSettings) {
-            var client = new MongoClient(applicationSettings.ConnectionString);
+            var client = new MongoClient(applicationSettings.DatabaseConnectionString);
             var database = client.GetDatabase(applicationSettings.DatabaseName);
             _contacts = database.GetCollection<Contact>(applicationSettings.ContactsCollectionName);
         }

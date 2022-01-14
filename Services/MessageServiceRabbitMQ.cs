@@ -13,7 +13,7 @@ namespace API.Services {
             //_factory.UserName = _applicationSettings.QueueUser;
             //_factory.Password = _applicationSettings.QueuePassword;
             //_factory.VirtualHost = _applicationSettings.QueueVHost;
-            _factory.HostName = _applicationSettings.QueueHostName;
+            _factory.HostName = _applicationSettings.QueueConnectionString;
             //_factory.Port = _applicationSettings.QueuePort;
         }
 

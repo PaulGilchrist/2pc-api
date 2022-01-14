@@ -5,6 +5,7 @@ using API.Services;
 using Microsoft.AspNetCore.OData;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Azure.Monitor.OpenTelemetry.Exporter;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 
@@ -12,18 +13,32 @@ var builder = WebApplication.CreateBuilder(args);
 // Define some important OpenTelemetry constants and the activity source
 var serviceName = "mongodb-api";
 var serviceVersion = "1.0.0";
+var applicationSettings = new ApplicationSettings();
 // Configure important OpenTelemetry settings and the console exporter
 builder.Services.AddOpenTelemetryTracing(b => {
     b
-    .AddConsoleExporter()
     .AddSource(serviceName)
     .SetResourceBuilder(
         ResourceBuilder.CreateDefault()
             .AddService(serviceName: serviceName,serviceVersion: serviceVersion))
-    // .AddZipkinExporter() // Default telemetry destination for Dapr
+    .AddConsoleExporter() // Will always be added regardless of which TelemetryType is chosen
+
+    .AddZipkinExporter() // Default telemetry destination for Dapr
     // .AddSqlClientInstrumentation()
     .AddHttpClientInstrumentation()
     .AddAspNetCoreInstrumentation();
+    switch(applicationSettings.QueueType) {
+        case "AppInsights":
+            b.AddAzureMonitorTraceExporter(o => {
+                o.ConnectionString = applicationSettings.TelemetryConnectionString;
+            });
+            break;
+        case "Zipkin":  // Default telemetry destination for Dapr
+            b.AddZipkinExporter(o => {
+                o.Endpoint = new Uri(applicationSettings.TelemetryConnectionString); //ex: http://localhost:9411/api/v2/spans
+            });
+            break;
+    }
 });
 // Add services to the container.
 // CORS support
@@ -38,7 +53,6 @@ builder.Services.AddCors(options => {
 });
 builder.Services.AddSingleton<ApplicationSettings>();
 builder.Services.AddSingleton<ContactService>();
-var applicationSettings = new ApplicationSettings();
 // Example showing support for multiple messaging platforms
 switch(applicationSettings.QueueType) {
     case "AzureServiceBus":
