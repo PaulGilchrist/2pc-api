@@ -88,7 +88,7 @@ app.UseODataQueryRequest();
 app.UseODataBatching();
 app.UseSwagger(options => {
     options.PreSerializeFilters.Add((swaggerDoc,httpReq) => {
-        swaggerDoc.Servers = new List<OpenApiServer> { new OpenApiServer { Url = $"{httpReq.Scheme}://{httpReq.Host.Value}{applicationSettings.BasePath}" } };
+        swaggerDoc.Servers = new List<OpenApiServer> { new OpenApiServer { Url = $"https://{httpReq.Host.Value}{applicationSettings.BasePath}" } };
     });
 });
 app.UseSwaggerUI(options => {
