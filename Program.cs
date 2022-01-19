@@ -7,7 +7,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Azure.Monitor.OpenTelemetry.Exporter;
 using Swashbuckle.AspNetCore.SwaggerUI;
-
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 // Define some important OpenTelemetry constants and the activity source
@@ -83,9 +83,14 @@ builder.Services.AddSwaggerGen(options => {
 var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) {}
+//app.UsePathBase(new PathString("/contacts"));  // Allows being hosted behind a reverse-proxy or ingress-gateway (do not rewrite/remove contacts from at proxy path)
 app.UseODataQueryRequest();
 app.UseODataBatching();
-app.UseSwagger();
+app.UseSwagger(options => {
+    options.PreSerializeFilters.Add((swaggerDoc,httpReq) => {
+        swaggerDoc.Servers = new List<OpenApiServer> { new OpenApiServer { Url = $"{httpReq.Scheme}://{httpReq.Host.Value}{applicationSettings.BasePath}" } };
+    });
+});
 app.UseSwaggerUI(options => {
     options.DefaultModelExpandDepth(2);
     options.DefaultModelsExpandDepth(-1);

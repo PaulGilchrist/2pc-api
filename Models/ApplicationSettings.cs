@@ -2,6 +2,7 @@
 
 namespace API.Models {
     public class ApplicationSettings {
+        public string BasePath { get; set; }
         public string ContactsCollectionName { get; set; }
         public string DatabaseConnectionString { get; set; }
         public string DatabaseName { get; set; }
@@ -12,9 +13,10 @@ namespace API.Models {
         public string TelemetryType { get; set; }
         public ApplicationSettings() {
 #pragma warning disable CS8601
+            BasePath = Environment.GetEnvironmentVariable("BasePath") ?? "/"; // Change if using layer 7 routing like when using an ingress-gateway or reverse-proxy
+            ContactsCollectionName = Environment.GetEnvironmentVariable("ContactsCollectionName");
             DatabaseConnectionString = Environment.GetEnvironmentVariable("DatabaseConnectionString");
             DatabaseName = Environment.GetEnvironmentVariable("DatabaseName");
-            ContactsCollectionName = Environment.GetEnvironmentVariable("ContactsCollectionName");
             QueueConnectionString = Environment.GetEnvironmentVariable("QueueConnectionString"); // Same as HostName for QueueType="RabbitMQ"
             QueueName = Environment.GetEnvironmentVariable("QueueName");
             QueueType = Environment.GetEnvironmentVariable("QueueType"); // Valid options are "AzureServiceBus", "Dapr", "None", or "RabbitMQ" (Default: "None")
