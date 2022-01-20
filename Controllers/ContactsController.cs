@@ -119,6 +119,47 @@ namespace API.Controllers {
 
         /// <summary>Edit contact</summary>
         /// <param name="id">The contact id</param>
+        /// <returns>An updated contact</returns>
+        /// <response code="200">The contact was successfully updated</response>
+        /// <response code="400">The contact is invalid</response>
+        /// <response code="401">Authentication required</response>
+        /// <response code="403">Access denied due to inadaquate claim roles</response>
+        /// <response code="404">The contact was not found</response>
+        [HttpPatch]
+        [Route("contacts/{id}")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(Contact),200)] // Ok
+        [ProducesResponseType(typeof(string),400)] // Bad Request (should be ModelStateDictionary)
+        [ProducesResponseType(typeof(void),401)] // Unauthorized - Product not authenticated
+        [ProducesResponseType(typeof(ForbiddenException),403)] // Forbidden - Product does not have required claim roles
+        [ProducesResponseType(typeof(void),404)] // Not Found
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
+        public async Task<IActionResult> Patch([FromRoute] string id) {
+            try {
+                var contact = await _contactService.Get(id);
+                if(contact == null) {
+                    return NotFound();
+                }
+                var contactDelta = JsonConvert.DeserializeObject<dynamic>(await new StreamReader(Request.Body).ReadToEndAsync());
+                API.Classes.Delta.Patch<Contact>(contactDelta,contact); // OData Delta<T>.Patch() not working with .Net 6 as of OData 8.0.6 so we wrote our own
+                // Wrap the message send (first) and the DB change (second) in a message transaction
+                _messageService.BeginTransaction();
+                var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,contact));
+                _messageService.Send(message);
+                await _contactService.Update(id,contact);
+                _messageService.CommitTransaction();
+                Activity.Current?.AddTag("value",contact);
+                return NoContent();
+            } catch(Exception ex) {
+                Activity.Current?.AddTag("exception",ex);
+                // Rollback the event message send since an error has occured with updating the database
+                _messageService.RollbackTransaction();
+                return StatusCode(500,ex.Message);
+            }
+        }
+
+        /// <summary>Edit contact</summary>
+        /// <param name="id">The contact id</param>
         /// <param name="contact">A updated contact object.</param>
         /// <returns>An updated contact</returns>
         /// <response code="200">The contact was successfully updated</response>
@@ -180,7 +221,7 @@ namespace API.Controllers {
                 // Wrap the message send (first) and the DB change (second) in a message transaction
                 _messageService.BeginTransaction();
                 _messageService.Send(message);
-                await _contactService.Remove(contact.Id);
+                await _contactService.Remove(id);
                 _messageService.CommitTransaction();
                 return NoContent();
             } catch(Exception ex) {
@@ -190,46 +231,6 @@ namespace API.Controllers {
                 return StatusCode(500,ex.Message);
             }
         }
-
-        ///// <summary>Edit contact</summary>
-        ///// <param name="id">The contact id</param>
-        ///// <param name="contact">A updated contact object.</param>
-        ///// <returns>An updated contact</returns>
-        ///// <response code="200">The contact was successfully updated</response>
-        ///// <response code="400">The contact is invalid</response>
-        ///// <response code="401">Authentication required</response>
-        ///// <response code="403">Access denied due to inadaquate claim roles</response>
-        ///// <response code="404">The contact was not found</response>
-        //[HttpPatch]
-        //[Route("contacts/{id}")]
-        //[Produces("application/json")]
-        //[ProducesResponseType(typeof(Contact),200)] // Ok
-        //[ProducesResponseType(typeof(string),400)] // Bad Request (should be ModelStateDictionary)
-        //[ProducesResponseType(typeof(void),401)] // Unauthorized - Product not authenticated
-        //[ProducesResponseType(typeof(ForbiddenException),403)] // Forbidden - Product does not have required claim roles
-        //[ProducesResponseType(typeof(void),404)] // Not Found
-        ////[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
-        //public async Task<IActionResult> Patch([FromRoute] string id,[FromBody] Delta<Contact> delta) {
-        //    try {
-        //        var contact = await _contactService.Get(id);
-        //        if(contact == null) {
-        //            return NotFound();
-        //        }
-        //        delta.Patch(contact); // Delta<T>.Patch() not working with .Net 6 as of OData 8.0.5
-        //        // Wrap the message send (first) and the DB change (second) in a message transaction
-        //        _messageService.BeginTransaction();
-        //        var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,contact));
-        //        _messageService.Send(message);
-        //        await _contactService.Update(id,contact);
-        //        _messageService.CommitTransaction();
-        //        return NoContent();
-        //    } catch(Exception ex) {
-        //        // Rollback the event message send since an error has occured with updating the database
-        //        _messageService.RollbackTransaction();
-        //        Activity.Current?.AddTag("exception",ex);
-        //        return StatusCode(500,ex.Message);
-        //    }
-        //}
 
         #endregion
     }
