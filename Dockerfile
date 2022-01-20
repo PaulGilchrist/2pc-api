@@ -10,19 +10,19 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
-COPY ["mongodb-api.csproj", "."]
-RUN dotnet restore "./mongodb-api.csproj"
+COPY ["contacts-api.csproj", "."]
+RUN dotnet restore "./contacts-api.csproj"
 COPY . .
 WORKDIR "/src/."
-RUN dotnet build "mongodb-api.csproj" -c Release -o /app/build
+RUN dotnet build "contacts-api.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "mongodb-api.csproj" -c Release -o /app/publish
+RUN dotnet publish "contacts-api.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "mongodb-api.dll"]
+ENTRYPOINT ["dotnet", "contacts-api.dll"]
 
 # docker run -d -p 8081:80 paulgilchrist/mongodb-api
 # docker rm -f <containerID>
