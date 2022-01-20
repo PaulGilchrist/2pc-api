@@ -74,7 +74,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options => {
     var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
     if(basePath != null) {
-        options.IncludeXmlComments(Path.Combine(basePath,"mongodb-api.xml"));
+        options.IncludeXmlComments(Path.Combine(basePath,"contacts-api.xml"));
     }
     //Configure Swagger to filter out $expand objects to improve performance for large highly relational APIs
     options.SchemaFilter<SwaggerIgnoreFilter>();
@@ -83,15 +83,25 @@ builder.Services.AddSwaggerGen(options => {
 var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) {}
-//app.UsePathBase(new PathString("/contacts"));  // Allows being hosted behind a reverse-proxy or ingress-gateway (do not rewrite/remove contacts from at proxy path)
 app.UseODataQueryRequest();
 app.UseODataBatching();
 app.UseSwagger(options => {
     options.PreSerializeFilters.Add((swaggerDoc,httpReq) => {
+        var contact = new OpenApiContact();
+        contact.Name = "Paul Gilchrist";
+        contact.Email = "paul.gilchrist@outlook.com";
+        contact.Url = new Uri("https://github.com/PaulGilchrist");
+        swaggerDoc.Info.Contact = contact;
+        swaggerDoc.Info.Contact.Email = "paul.gilchrist@outlook.com";
+        swaggerDoc.Info.Contact.Url = new Uri("https://github.com/PaulGilchrist");
+        swaggerDoc.Info.Description = "All Contact related business objects";
+        swaggerDoc.Info.Title = "Contacts API";
+        swaggerDoc.Info.Version = "1.0.0";
         swaggerDoc.Servers = new List<OpenApiServer> { new OpenApiServer { Url = $"https://{httpReq.Host.Value}{applicationSettings.BasePath}" } };
     });
 });
 app.UseSwaggerUI(options => {
+    options.DocumentTitle = "Contacts API";
     options.DefaultModelExpandDepth(2);
     options.DefaultModelsExpandDepth(-1);
     options.DefaultModelRendering(ModelRendering.Model);

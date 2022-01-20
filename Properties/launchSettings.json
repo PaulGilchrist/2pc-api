@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "iisSettings": {
     "windowsAuthentication": false,
@@ -9,29 +9,28 @@
     }
   },
   "profiles": {
-    "minimal_api": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": true,
-      "launchUrl": "swagger",
-      "applicationUrl": "https://localhost:7163;http://localhost:5249",
-        "environmentVariables": {
-            "ASPNETCORE_ENVIRONMENT": "Development",
-            "BasePath": "/",
-            "DatabaseConnectionString": "mongodb://localhost:27017",
-            "DatabaseName": "mongotest",
-            "ContactsCollectionName": "contacts",
-            "QueueConnectionString": "localhost",
-            "QueueName": "api",
-            "QueueType": "RabbitMQ",
-            "TelemetryConnectionString": "",
-            "TelemetryType": "Console"
-        }
-    },
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
       "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "BasePath": "/",
+        "DatabaseConnectionString": "mongodb://localhost:27017",
+        "DatabaseName": "contacts",
+        "ContactsCollectionName": "contacts",
+        "QueueConnectionString": "localhost",
+        "QueueName": "api",
+        "QueueType": "RabbitMQ",
+        "TelemetryConnectionString": "",
+        "TelemetryType": "Console"
+      }
+    },
+    "API": {
+        "commandName": "Project",
+        "launchBrowser": true,
+        "launchUrl": "swagger",
+        "applicationUrl": "https://localhost:44830;http://localhost:37292",
         "environmentVariables": {
             "ASPNETCORE_ENVIRONMENT": "Development",
             "BasePath": "/",
@@ -47,5 +46,3 @@
     }
   }
 }
-
-
