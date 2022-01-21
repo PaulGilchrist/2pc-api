@@ -2,12 +2,12 @@
 using API.Classes;
 using API.Models;
 using API.Services;
+using Azure.Monitor.OpenTelemetry.Exporter;
 using Microsoft.AspNetCore.OData;
+using Microsoft.OpenApi.Models;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Azure.Monitor.OpenTelemetry.Exporter;
 using Swashbuckle.AspNetCore.SwaggerUI;
-using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 // Define some important OpenTelemetry constants and the activity source

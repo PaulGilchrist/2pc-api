@@ -1,17 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Transactions;
+﻿using System.Diagnostics;
 using API.Models;
 using API.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 #pragma warning disable S125 // Sections of code should not be commented out
@@ -119,8 +110,9 @@ namespace API.Controllers {
 
         /// <summary>Edit contact</summary>
         /// <param name="id">The contact id</param>
+        /// <param name="contactDelta">A partial JSON representation of the contact including only the properites to change.</param>
         /// <returns>An updated contact</returns>
-        /// <response code="200">The contact was successfully updated</response>
+        /// <response code="204">The contact was successfully updated</response>
         /// <response code="400">The contact is invalid</response>
         /// <response code="401">Authentication required</response>
         /// <response code="403">Access denied due to inadaquate claim roles</response>
@@ -128,27 +120,29 @@ namespace API.Controllers {
         [HttpPatch]
         [Route("contacts/{id}")]
         [Produces("application/json")]
-        [ProducesResponseType(typeof(Contact),200)] // Ok
+        [ProducesResponseType(typeof(void),204)] // No Content 
         [ProducesResponseType(typeof(string),400)] // Bad Request (should be ModelStateDictionary)
         [ProducesResponseType(typeof(void),401)] // Unauthorized - Product not authenticated
         [ProducesResponseType(typeof(ForbiddenException),403)] // Forbidden - Product does not have required claim roles
         [ProducesResponseType(typeof(void),404)] // Not Found
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme + ",BasicAuthentication", Roles = "Admin")]
-        public async Task<IActionResult> Patch([FromRoute] string id) {
+        public async Task<IActionResult> Patch([FromRoute] string id,[FromBody] dynamic contactDelta) {
+            // [FromBody] types other than dynamic will be null as they will be missing properties and not match the static type definition
             try {
-                var contact = await _contactService.Get(id);
-                if(contact == null) {
+                var foundContact = await _contactService.Get(id);
+                if(foundContact == null) {
                     return NotFound();
                 }
-                var contactDelta = JsonConvert.DeserializeObject<dynamic>(await new StreamReader(Request.Body).ReadToEndAsync());
-                API.Classes.Delta.Patch<Contact>(contactDelta,contact); // OData Delta<T>.Patch() not working with .Net 6 as of OData 8.0.6 so we wrote our own
+                // The dynamic [FromBody] is different from the dynamic generated when deserializing a JSON string
+                contactDelta = JsonConvert.DeserializeObject<dynamic>(Convert.ToString(contactDelta));
+                API.Classes.Delta.Patch<Contact>(contactDelta,foundContact); // OData Delta<T>.Patch() not working with .Net 6 as of OData 8.0.6 so we wrote our own
                 // Wrap the message send (first) and the DB change (second) in a message transaction
                 _messageService.BeginTransaction();
-                var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,contact));
+                var message = JsonConvert.SerializeObject(new TraceMessage("PATCH","Contact",id,foundContact));
                 _messageService.Send(message);
-                await _contactService.Update(id,contact);
+                await _contactService.Update(id,foundContact);
                 _messageService.CommitTransaction();
-                Activity.Current?.AddTag("value",contact);
+                Activity.Current?.AddTag("value",foundContact);
                 return NoContent();
             } catch(Exception ex) {
                 Activity.Current?.AddTag("exception",ex);
@@ -162,7 +156,7 @@ namespace API.Controllers {
         /// <param name="id">The contact id</param>
         /// <param name="contact">A updated contact object.</param>
         /// <returns>An updated contact</returns>
-        /// <response code="200">The contact was successfully updated</response>
+        /// <response code="204">The contact was successfully updated</response>
         /// <response code="400">The contact is invalid</response>
         /// <response code="401">Authentication required</response>
         /// <response code="403">Access denied due to inadaquate claim roles</response>
@@ -170,7 +164,7 @@ namespace API.Controllers {
         [HttpPut]
         [Route("contacts/{id}")]
         [Produces("application/json")]
-        [ProducesResponseType(typeof(Contact),200)] // Ok
+        [ProducesResponseType(typeof(void),204)] // No Content
         [ProducesResponseType(typeof(string),400)] // Bad Request (should be ModelStateDictionary)
         [ProducesResponseType(typeof(void),401)] // Unauthorized - Product not authenticated
         [ProducesResponseType(typeof(ForbiddenException),403)] // Forbidden - Product does not have required claim roles

@@ -1,6 +1,4 @@
-﻿using API.Models;
-
-namespace API.Services {
+﻿namespace API.Services {
     public interface IMessageService: IDisposable {
         public void BeginTransaction();
         public void CommitTransaction();

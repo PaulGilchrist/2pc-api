@@ -1,8 +1,7 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using System.Reflection;
+using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Linq;
-using System.Reflection;
 
 namespace API.Classes {
 

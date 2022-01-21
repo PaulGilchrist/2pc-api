@@ -1,7 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using API.Models;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
-using API.Models;
 
 namespace API.Services {
     public class ContactService {
