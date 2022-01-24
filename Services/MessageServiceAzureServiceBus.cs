@@ -31,12 +31,10 @@ namespace API.Services {
             var client = new ServiceBusClient(connectionString,options);
             // Create the sender and receiver
             _sender = client.CreateSender(queueName);
-            _transferReceiver = client.CreateReceiver($"transfer-{queueName}");
             _receiver = client.CreateReceiver(queueName);
         }
 
         public void BeginTransaction() {
-            _transferMessage = _transferReceiver.ReceiveMessageAsync().GetAwaiter().GetResult();
             _transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
         }
 
@@ -64,8 +62,6 @@ namespace API.Services {
         }
 
         public void Send(string message) {
-            // setup transfer receiver so we know the message was delivered before calling CommitTransaction();
-            _transferReceiver.CompleteMessageAsync(_transferMessage).GetAwaiter();
             // send the message
             _sender.SendMessageAsync(new ServiceBusMessage(message)).GetAwaiter();
             var activityTagsCollection = new ActivityTagsCollection();
