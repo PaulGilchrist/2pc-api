@@ -5,6 +5,7 @@ using Azure.Messaging.ServiceBus;
 
 /*
  * Azure Service Bus Transactions
+ * Requires either Standard or Premium tiers (not Basic)
  * https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-transactions
  * https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/servicebus/Azure.Messaging.ServiceBus/samples/Sample06_Transactions.md#transactions-across-entities
  */
@@ -14,8 +15,6 @@ namespace API.Services {
     public class MessageServiceAzureServiceBus: IMessageService, IDisposable {
         private readonly ApplicationSettings _applicationSettings;
         private ServiceBusSender _sender;
-        private ServiceBusReceivedMessage? _transferMessage;
-        private ServiceBusReceiver _transferReceiver;
         private ServiceBusReceiver _receiver;
         private TransactionScope? _transactionScope = null;
 
