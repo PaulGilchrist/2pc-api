@@ -9,5 +9,6 @@ Main additions to the Visual Studio template include:
 * OData support
 * OpenTelemetry support with exporters for AppInsights, Console, or Zipkin
 * Messaging support for AzureServiceBus, Dapr, or RabbitMQ
-  * Transactional support ensuring both event messaging and DB changes both succeed or both fail
+  * Two Phase Commit (prepare/commit aka transactional) support ensuring both event messaging and DB changes both succeed or both fail
+    * This is NOT recommended over the SAGA pattern.  Recommend using project `saga-api`
 * Ingress-gateway or reverse-proxy support for Open Api when defining BasePath environment variable
